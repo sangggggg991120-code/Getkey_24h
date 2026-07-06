@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delta Script Get Key System</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background: #121212; color: #fff; padding-top: 50px; }
+        .container { background: #1e1e1e; padding: 30px; border-radius: 10px; display: inline-block; box-shadow: 0px 0px 15px rgba(255,255,255,0.1); width: 85%; max-width: 450px; }
+        .key-box { background: #333; padding: 15px; font-size: 22px; font-weight: bold; letter-spacing: 1px; border-radius: 5px; margin: 20px 0; color: #ffeb3b; display: none; word-break: break-all; }
+        .timer-text { font-size: 18px; color: #ff5252; margin: 15px 0; font-weight: bold; }
+        button { background: #007bff; color: white; border: none; padding: 12px 25px; font-size: 16px; cursor: pointer; border-radius: 5px; font-weight: bold; width: 100%; transition: 0.3s; }
+        button:disabled { background: #555; cursor: not-allowed; }
+        button.success { background: #4CAF50; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>HỆ THỐNG LẤY KEY SCRIPT</h2>
+    <p id="status-text">Vui lòng bấm nút bắt đầu và chờ đợi 180 giây để nhận Key.</p>
+    
+    <div class="timer-text" id="timerDisplay" style="display: none;">Thời gian còn lại: 180 giây</div>
+    <div class="key-box" id="keyDisplay"></div>
+    
+    <button id="actionBtn" onclick="startCountdown()">Bắt đầu tạo Key</button>
+</div>
+
+<script>
+    // === CẤU HÌNH GITHUB (ĐÃ XÓA TOKEN ĐỂ BẢO MẬT) ===
+    const GITHUB_USER = "sangggggg991120-code";  
+    const GITHUB_REPO = "Getkey_24h";            
+    const GITHUB_FILE = "Madebyhamster";         
+    // =======================================================
+
+    let timeLeft = 180; 
+    let countdownInterval;
+    let finalKeyForUser = ""; 
+    let dataToUpload = "";
+
+    function generateRandomKey() {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        let result = "DELTA-";
+        for (let i = 0; i < 8; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    }
+
+    function startCountdown() {
+        document.getElementById("actionBtn").disabled = true;
+        document.getElementById("timerDisplay").style.display = "block";
+        document.getElementById("status-text").innerText = "Hệ thống đang kiểm tra liên kết...";
+
+        countdownInterval = setInterval(function() {
+            timeLeft--;
+            document.getElementById("timerDisplay").innerText = "Thời gian còn lại: " + timeLeft + " giây";
+
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                finishCountdown();
+            }
+        }, 1000);
+    }
+
+    async function finishCountdown() {
+        const randomStr = generateRandomKey();
+        const timestamp = Math.floor(Date.now() / 1000); 
+
+        finalKeyForUser = randomStr; 
+        dataToUpload = randomStr + "|" + timestamp;
+
+        document.getElementById("keyDisplay").innerText = finalKeyForUser;
+        document.getElementById("keyDisplay").style.display = "block";
+        document.getElementById("timerDisplay").style.display = "none";
+        document.getElementById("status-text").innerText = "Đang đồng bộ mã Key lên hệ thống GitHub...";
+
+        // Gọi hàm gửi Key an toàn qua Vercel Serverless Function
+        const success = await sendKeyToGitHub(dataToUpload);
+
+        if (success) {
+            document.getElementById("status-text").innerText = "Đồng bộ thành công! Hãy sao chép Key và dán vào game:";
+            const btn = document.getElementById("actionBtn");
+            btn.disabled = false;
+            btn.innerText = "Sao chép Key";
+            btn.className = "success";
+            btn.setAttribute("onclick", "copyKey()");
+        } else {
+            document.getElementById("status-text").innerText = "Lỗi kết nối hệ thống! Vui lòng kiểm tra lại cấu hình Vercel.";
+        }
+    }
+
+    // HÀM ĐÃ ĐƯỢC SỬA LẠI: Chuyển hướng gửi qua API ẩn của Vercel để giấu token
+    async function sendKeyToGitHub(textData) {
+        try {
+            const response = await fetch('/api/savekey', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    textData: textData,
+                    githubUser: GITHUB_USER,
+                    githubRepo: GITHUB_REPO,
+                    githubFile: GITHUB_FILE
+                })
+            });
+            
+            const result = await response.json();
+            return response.ok && result.success;
+        } catch (error) {
+            console.error("Lỗi gửi dữ liệu:", error);
+            return false;
+        }
+    }
+
+    function copyKey() {
+        navigator.clipboard.writeText(finalKeyForUser);
+        alert("Đã sao chép Key thành công vào bộ nhớ tạm!");
+    }
+</script>
+
+</body>
+</html>
